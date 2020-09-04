@@ -8,7 +8,7 @@
 //  Press button A to silence the buzzer 
 //  Press A again to start another work timer
 //  Define constants
-let WORK_TIMER_LENGTH = 20
+let WORK_TIMER_LENGTH = 25
 let WORK_TIMER_SERVO_MODULO = 2
 let BREAK_TIMER_LENGTH = 5
 let BREAK_TIMER_SERVO_MODULO = 1
@@ -22,6 +22,27 @@ let is_work_timer = false
 let alarm_active = true
 let servo_angle = 180
 //  0 <= servo_angle <= 180
+function plot_number_on_grid(number: number) {
+    let y: number;
+    basic.clearScreen()
+    if (number == 0) {
+        return
+    }
+    
+    let max_x = Math.idiv(number - 1, 5)
+    let max_y = (number - 1) % 5
+    //  Plot all LEDs with x < max_x
+    for (let x = 0; x < max_x; x++) {
+        for (y = 0; y < 5; y++) {
+            led.plot(x, y)
+        }
+    }
+    //  Plot LEDs with x == max_x and y <= max_y
+    for (y = 0; y < max_y + 1; y++) {
+        led.plot(max_x, y)
+    }
+}
+
 control.inBackground(function display() {
     let previous_time_left = -1
     while (true) {
@@ -31,7 +52,8 @@ control.inBackground(function display() {
         } else {
             if (time_left != previous_time_left) {
                 //  Only do basic.show_number once per increment to stop it getting out of sync
-                basic.showNumber(time_left, 30)
+                //  basic.show_number(time_left, 30)
+                plot_number_on_grid(time_left)
                 previous_time_left = time_left
             }
             
