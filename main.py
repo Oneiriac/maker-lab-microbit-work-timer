@@ -1,17 +1,3 @@
-# def main_loop():
-#     pins.analog_write_pin(AnalogPin.P0, 1023)
-#     pins.servo_write_pin(AnalogPin.P11, 360)
-#     basic.pause(2000)
-#     pins.analog_write_pin(AnalogPin.P0, 0)
-#     pins.servo_write_pin(AnalogPin.P11, 0)
-#     basic.pause(2000)
-
-# basic.forever(main_loop)
-
-# def on_button_pressed_a():
-#     basic.show_number(Math.round(Math.random()*10))
-# input.on_button_pressed(Button.A, on_button_pressed_a)
-
 # 30 minute timer
 # Number of minutes remaining scrolls on the screen
 # Servo only has 180 degrees of motion
@@ -29,7 +15,6 @@ BREAK_TIMER_LENGTH = 10
 BREAK_TIMER_SERVO_MODULO = 2
 MAX_SERVO_ANGLE = 180
 TIME_STEP = 1000  # increment that the timer uses
-
 # Initialise variables
 time_left = WORK_TIMER_LENGTH
 is_work_timer = True
