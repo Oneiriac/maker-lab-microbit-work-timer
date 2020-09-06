@@ -21,19 +21,27 @@ time_left = 0
 is_work_timer = False  # Will switch to start with work timer after pressing A
 alarm_active = True
 
+def plot_on_column(number, column_index):
+    if number <= 0 or number >= 6:
+        return
+    for y in range(0, number):
+        led.plot(column_index, y)
+
 def plot_number_on_grid(number):
+    """
+    Use left 2 columns to plot the tens digit
+    Use right 2 columns to plot the ones digit
+    """
     basic.clear_screen()
     if number == 0:
         return
-    max_x = (number - 1) // 5;
-    max_y = (number - 1) % 5;
-    # Plot all LEDs with x < max_x
-    for x in range(0, max_x):
-        for y in range(0, 5):
-            led.plot(x, y)
-    # Plot LEDs with x == max_x and y <= max_y
-    for y in range(0, max_y+1):
-        led.plot(max_x, y)
+    tens_digit = number // 10
+    ones_digit = number % 10
+
+    plot_on_column(min(tens_digit, 5), 0)
+    plot_on_column(tens_digit-5, 1)
+    plot_on_column(min(ones_digit, 5), 3)
+    plot_on_column(ones_digit-5, 4)
 
 def display():
     previous_time_left = -1
@@ -42,13 +50,13 @@ def display():
             if alarm_active:
                 basic.show_string("!!!", 50)
             else:
-                basic.show_number(WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH, 50)
+                plot_number_on_grid(WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH)
             basic.pause(50)
         else:
             if time_left != previous_time_left:
                 # Only do basic.show_number once per increment to stop it getting out of sync
-                basic.show_number(time_left, 30)
-                # plot_number_on_grid(time_left)
+                # basic.show_number(time_left, 30)
+                plot_number_on_grid(time_left)
                 previous_time_left = time_left
             basic.pause(50)
 

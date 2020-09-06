@@ -21,25 +21,33 @@ let time_left = 0
 let is_work_timer = false
 //  Will switch to start with work timer after pressing A
 let alarm_active = true
+function plot_on_column(number: number, column_index: number) {
+    if (number <= 0 || number >= 6) {
+        return
+    }
+    
+    for (let y = 0; y < number; y++) {
+        led.plot(column_index, y)
+    }
+}
+
 function plot_number_on_grid(number: number) {
-    let y: number;
+    /** 
+    Use left 2 columns to plot the tens digit
+    Use right 2 columns to plot the ones digit
+    
+ */
     basic.clearScreen()
     if (number == 0) {
         return
     }
     
-    let max_x = Math.idiv(number - 1, 5)
-    let max_y = (number - 1) % 5
-    //  Plot all LEDs with x < max_x
-    for (let x = 0; x < max_x; x++) {
-        for (y = 0; y < 5; y++) {
-            led.plot(x, y)
-        }
-    }
-    //  Plot LEDs with x == max_x and y <= max_y
-    for (y = 0; y < max_y + 1; y++) {
-        led.plot(max_x, y)
-    }
+    let tens_digit = Math.idiv(number, 10)
+    let ones_digit = number % 10
+    plot_on_column(Math.min(tens_digit, 5), 0)
+    plot_on_column(tens_digit - 5, 1)
+    plot_on_column(Math.min(ones_digit, 5), 3)
+    plot_on_column(ones_digit - 5, 4)
 }
 
 control.inBackground(function display() {
@@ -49,15 +57,15 @@ control.inBackground(function display() {
             if (alarm_active) {
                 basic.showString("!!!", 50)
             } else {
-                basic.showNumber(is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH, 50)
+                plot_number_on_grid(is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH)
             }
             
             basic.pause(50)
         } else {
             if (time_left != previous_time_left) {
                 //  Only do basic.show_number once per increment to stop it getting out of sync
-                basic.showNumber(time_left, 30)
-                //  plot_number_on_grid(time_left)
+                //  basic.show_number(time_left, 30)
+                plot_number_on_grid(time_left)
                 previous_time_left = time_left
             }
             
