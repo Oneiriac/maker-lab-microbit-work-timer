@@ -62,11 +62,26 @@ def display():
 
 def buzz():
     while True:
+        current_timer = WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH
         if time_left == 0 and alarm_active:
             pins.digital_write_pin(DigitalPin.P0, 1)
             basic.pause(300)
             pins.digital_write_pin(DigitalPin.P0, 0)
             basic.pause(300)
+        elif time_left == current_timer // 2 or time_left == current_timer // 5:
+            # Beep at 1/2 and 1/5 time time_left
+            pins.digital_write_pin(DigitalPin.P0, 1)
+            basic.pause(300)
+            pins.digital_write_pin(DigitalPin.P0, 0)
+            basic.pause(200)
+            pins.digital_write_pin(DigitalPin.P0, 1)
+            basic.pause(300)
+            pins.digital_write_pin(DigitalPin.P0, 0)
+            basic.pause(200)
+            pins.digital_write_pin(DigitalPin.P0, 1)
+            basic.pause(300)
+            pins.digital_write_pin(DigitalPin.P0, 0)
+            basic.pause(200)
         else:
             basic.pause(100)
 

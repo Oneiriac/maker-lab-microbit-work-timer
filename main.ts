@@ -75,12 +75,28 @@ control.inBackground(function display() {
     }
 })
 control.inBackground(function buzz() {
+    let current_timer: number;
     while (true) {
+        current_timer = is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH
         if (time_left == 0 && alarm_active) {
             pins.digitalWritePin(DigitalPin.P0, 1)
             basic.pause(300)
             pins.digitalWritePin(DigitalPin.P0, 0)
             basic.pause(300)
+        } else if (time_left == Math.idiv(current_timer, 2) || time_left == Math.idiv(current_timer, 5)) {
+            //  Beep at 1/2 and 1/5 time time_left
+            pins.digitalWritePin(DigitalPin.P0, 1)
+            basic.pause(300)
+            pins.digitalWritePin(DigitalPin.P0, 0)
+            basic.pause(200)
+            pins.digitalWritePin(DigitalPin.P0, 1)
+            basic.pause(300)
+            pins.digitalWritePin(DigitalPin.P0, 0)
+            basic.pause(200)
+            pins.digitalWritePin(DigitalPin.P0, 1)
+            basic.pause(300)
+            pins.digitalWritePin(DigitalPin.P0, 0)
+            basic.pause(200)
         } else {
             basic.pause(100)
         }
