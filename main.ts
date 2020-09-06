@@ -55,6 +55,18 @@ function plot_number_on_grid(number: number) {
     plot_on_column(ones_digit - 5, 4)
 }
 
+control.inBackground(function set_volume() {
+    let analog_read: number;
+    let raw_volume: number;
+    let volume: number;
+    while (true) {
+        analog_read = pins.analogReadPin(AnalogPin.P1)
+        raw_volume = Math.min(Math.idiv(analog_read, 4), 255)
+        volume = raw_volume >= 10 ? raw_volume : 0
+        music.setVolume(volume)
+        basic.pause(30)
+    }
+})
 control.inBackground(function display() {
     let previous_time_left = -1
     while (true) {

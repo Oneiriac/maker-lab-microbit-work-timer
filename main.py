@@ -77,6 +77,15 @@ def display():
                 previous_time_left = time_left
             basic.pause(50)
 
+def set_volume():
+    while True:
+        analog_read = pins.analog_read_pin(AnalogPin.P1)
+        raw_volume = min(analog_read // 4, 255)
+        volume = raw_volume if raw_volume >= 10 else 0
+        music.set_volume(volume)
+        basic.pause(30)
+
+control.in_background(set_volume)
 control.in_background(display)
 
 def main_loop():
@@ -123,7 +132,6 @@ def on_button_pressed_a():
         alarm_melody_started = False
 
 input.on_button_pressed(Button.A, on_button_pressed_a)
-
 def on_button_pressed_b():
     """Change timer length"""
     global WORK_TIMER_LENGTH
