@@ -8,13 +8,15 @@
 //  Press button A to silence the buzzer 
 //  Press A again to start another work timer
 //  Define constants
-let WORK_TIMER_LENGTH = 25
-let WORK_TIMER_SERVO_MODULO = 2
-let BREAK_TIMER_LENGTH = 5
-let BREAK_TIMER_SERVO_MODULO = 1
+let MIN_WORK_TIMER_LENGTH = 25
+let MAX_WORK_TIMER_LENGTH = 60
+let MIN_BREAK_TIMER_LENGTH = 5
+let MAX_BREAK_TIMER_LENGTH = 30
 let TIME_STEP = 1000
-//  increment that the timer uses
+//  increment that the timer uses, in ms
 //  Initialise variables
+let WORK_TIMER_LENGTH = 25
+let BREAK_TIMER_LENGTH = 5
 let time_left = 0
 let is_work_timer = false
 //  Will switch to start with work timer after pressing A
@@ -44,13 +46,18 @@ control.inBackground(function display() {
     let previous_time_left = -1
     while (true) {
         if (time_left == 0) {
-            alarm_active ? basic.showString("!!!", 50) : basic.showIcon(IconNames.Asleep)
+            if (alarm_active) {
+                basic.showString("!!!", 50)
+            } else {
+                basic.showNumber(is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH, 50)
+            }
+            
             basic.pause(50)
         } else {
             if (time_left != previous_time_left) {
                 //  Only do basic.show_number once per increment to stop it getting out of sync
-                //  basic.show_number(time_left, 30)
-                plot_number_on_grid(time_left)
+                basic.showNumber(time_left, 30)
+                //  plot_number_on_grid(time_left)
                 previous_time_left = time_left
             }
             
@@ -97,19 +104,35 @@ input.onButtonPressed(Button.A, function on_button_pressed_a() {
     
     if (alarm_active) {
         alarm_active = false
+        is_work_timer = !is_work_timer
+        //  Switch timer
         return
     }
     
     //  Triggers when countdown finishes
-    if (is_work_timer) {
-        //  switch to break timer
-        is_work_timer = false
-        time_left = BREAK_TIMER_LENGTH
-    } else {
-        //  switch to work timer
-        is_work_timer = true
-        time_left = WORK_TIMER_LENGTH
+    time_left = is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH
+    alarm_active = true
+})
+input.onButtonPressed(Button.B, function on_button_pressed_b() {
+    /** Change timer length */
+    
+    
+    if (time_left > 0 || alarm_active) {
+        return
     }
     
-    alarm_active = true
+    if (is_work_timer) {
+        WORK_TIMER_LENGTH += 5
+        if (WORK_TIMER_LENGTH > MAX_WORK_TIMER_LENGTH) {
+            WORK_TIMER_LENGTH = MIN_WORK_TIMER_LENGTH
+        }
+        
+    } else {
+        BREAK_TIMER_LENGTH += 5
+        if (BREAK_TIMER_LENGTH > MAX_BREAK_TIMER_LENGTH) {
+            BREAK_TIMER_LENGTH = MIN_BREAK_TIMER_LENGTH
+        }
+        
+    }
+    
 })

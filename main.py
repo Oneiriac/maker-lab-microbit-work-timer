@@ -9,12 +9,14 @@
 # Press A again to start another work timer
 
 # Define constants
-WORK_TIMER_LENGTH = 25
-WORK_TIMER_SERVO_MODULO = 2
-BREAK_TIMER_LENGTH = 5
-BREAK_TIMER_SERVO_MODULO = 1
-TIME_STEP = 1000  # increment that the timer uses
+MIN_WORK_TIMER_LENGTH = 25
+MAX_WORK_TIMER_LENGTH = 60
+MIN_BREAK_TIMER_LENGTH = 5
+MAX_BREAK_TIMER_LENGTH = 30
+TIME_STEP = 1000  # increment that the timer uses, in ms
 # Initialise variables
+WORK_TIMER_LENGTH = 25
+BREAK_TIMER_LENGTH = 5
 time_left = 0
 is_work_timer = False  # Will switch to start with work timer after pressing A
 alarm_active = True
@@ -37,13 +39,16 @@ def display():
     previous_time_left = -1
     while True:
         if time_left == 0:
-            basic.show_string("!!!", 50) if alarm_active else basic.show_icon(IconNames.ASLEEP)
+            if alarm_active:
+                basic.show_string("!!!", 50)
+            else:
+                basic.show_number(WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH, 50)
             basic.pause(50)
         else:
             if time_left != previous_time_left:
                 # Only do basic.show_number once per increment to stop it getting out of sync
-                # basic.show_number(time_left, 30)
-                plot_number_on_grid(time_left)
+                basic.show_number(time_left, 30)
+                # plot_number_on_grid(time_left)
                 previous_time_left = time_left
             basic.pause(50)
 
@@ -84,15 +89,29 @@ def on_button_pressed_a():
         return
     if alarm_active:
         alarm_active = False
+        is_work_timer = not is_work_timer  # Switch timer
         return
 
     # Triggers when countdown finishes
-    if is_work_timer:  # switch to break timer
-        is_work_timer = False
-        time_left = BREAK_TIMER_LENGTH
-    else:  # switch to work timer
-        is_work_timer = True
-        time_left = WORK_TIMER_LENGTH
+    time_left = WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH
     alarm_active = True
 
 input.on_button_pressed(Button.A, on_button_pressed_a)
+
+def on_button_pressed_b():
+    """Change timer length"""
+    global WORK_TIMER_LENGTH
+    global BREAK_TIMER_LENGTH
+    if time_left > 0 or alarm_active:
+        return
+    
+    if is_work_timer:
+        WORK_TIMER_LENGTH += 5
+        if WORK_TIMER_LENGTH > MAX_WORK_TIMER_LENGTH:
+            WORK_TIMER_LENGTH = MIN_WORK_TIMER_LENGTH
+    else:
+        BREAK_TIMER_LENGTH += 5
+        if BREAK_TIMER_LENGTH > MAX_BREAK_TIMER_LENGTH:
+            BREAK_TIMER_LENGTH = MIN_BREAK_TIMER_LENGTH
+
+input.on_button_pressed(Button.B, on_button_pressed_b)
