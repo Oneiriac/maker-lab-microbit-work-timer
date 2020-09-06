@@ -13,13 +13,11 @@ WORK_TIMER_LENGTH = 25
 WORK_TIMER_SERVO_MODULO = 2
 BREAK_TIMER_LENGTH = 5
 BREAK_TIMER_SERVO_MODULO = 1
-MAX_SERVO_ANGLE = 180
 TIME_STEP = 1000  # increment that the timer uses
 # Initialise variables
 time_left = 0
 is_work_timer = False  # Will switch to start with work timer after pressing A
 alarm_active = True
-servo_angle = 180  # 0 <= servo_angle <= 180
 
 def plot_number_on_grid(number):
     basic.clear_screen()
@@ -59,39 +57,22 @@ def buzz():
         else:
             basic.pause(100)
 
-def set_servo():
-    servo_modulo = 0
-    while True:
-        servo_modulo = WORK_TIMER_SERVO_MODULO if is_work_timer else BREAK_TIMER_SERVO_MODULO
-        if time_left % servo_modulo == 0:
-            pins.servo_write_pin(AnalogPin.P11, servo_angle)
-        basic.pause(100)
-
-
 
 control.in_background(display)
 control.in_background(buzz)
-control.in_background(set_servo)
 
 def main_loop():
     global time_left
-    global servo_angle
     if is_work_timer:
         current_timer_length = WORK_TIMER_LENGTH
-        servo_modulo = WORK_TIMER_SERVO_MODULO
     else:
         current_timer_length = BREAK_TIMER_LENGTH
-        servo_modulo = BREAK_TIMER_SERVO_MODULO
 
     while time_left > 0:
         # Do a time step
         basic.pause(TIME_STEP)
         time_left -= 1
-        servo_angle = (current_timer_length-time_left)/current_timer_length*180
-
-    if time_left == 0 and not alarm_active:
-        servo_angle = 0
-
+        
 basic.forever(main_loop)
 
 def on_button_pressed_a():

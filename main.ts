@@ -12,7 +12,6 @@ let WORK_TIMER_LENGTH = 25
 let WORK_TIMER_SERVO_MODULO = 2
 let BREAK_TIMER_LENGTH = 5
 let BREAK_TIMER_SERVO_MODULO = 1
-let MAX_SERVO_ANGLE = 180
 let TIME_STEP = 1000
 //  increment that the timer uses
 //  Initialise variables
@@ -20,8 +19,6 @@ let time_left = 0
 let is_work_timer = false
 //  Will switch to start with work timer after pressing A
 let alarm_active = true
-let servo_angle = 180
-//  0 <= servo_angle <= 180
 function plot_number_on_grid(number: number) {
     let y: number;
     basic.clearScreen()
@@ -75,40 +72,20 @@ control.inBackground(function buzz() {
         
     }
 })
-control.inBackground(function set_servo() {
-    let servo_modulo = 0
-    while (true) {
-        servo_modulo = is_work_timer ? WORK_TIMER_SERVO_MODULO : BREAK_TIMER_SERVO_MODULO
-        if (time_left % servo_modulo == 0) {
-            pins.servoWritePin(AnalogPin.P11, servo_angle)
-        }
-        
-        basic.pause(100)
-    }
-})
 basic.forever(function main_loop() {
     let current_timer_length: number;
-    let servo_modulo: number;
-    
     
     if (is_work_timer) {
         current_timer_length = WORK_TIMER_LENGTH
-        servo_modulo = WORK_TIMER_SERVO_MODULO
     } else {
         current_timer_length = BREAK_TIMER_LENGTH
-        servo_modulo = BREAK_TIMER_SERVO_MODULO
     }
     
     while (time_left > 0) {
         //  Do a time step
         basic.pause(TIME_STEP)
         time_left -= 1
-        servo_angle = (current_timer_length - time_left) / current_timer_length * 180
     }
-    if (time_left == 0 && !alarm_active) {
-        servo_angle = 0
-    }
-    
 })
 input.onButtonPressed(Button.A, function on_button_pressed_a() {
     
