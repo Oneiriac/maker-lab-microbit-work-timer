@@ -21,6 +21,11 @@ let time_left = 0
 let is_work_timer = false
 //  Will switch to start with work timer after pressing A
 let alarm_active = true
+let alarm_melody_started = false
+music.setTempo(108)
+let alarm_melody = ["G4:2", "D#4:2", "A#3:1", "A#3:1", "A#3:2", "F4:2", "D#4:3", "R:1", "R:2", "G4:1", "G4:1", "G4:1", "G4:1", "G4:1", "G#4:1", "G4:1", "R:1", "G4:1", "G4:1", "G4:1", "G4:1", "G4:1", "G#4:1", "G4:1", "R:1"]
+let half_alert = ["D#5:2", "R:4", "A#4:2", "R:8"]
+let one_fifth_alert = ["G4:2", "R:4", "G#4:2", "R:8"]
 function plot_on_column(number: number, column_index: number) {
     if (number <= 0 || number >= 6) {
         return
@@ -74,37 +79,9 @@ control.inBackground(function display() {
         
     }
 })
-control.inBackground(function buzz() {
-    let current_timer: number;
-    while (true) {
-        current_timer = is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH
-        if (time_left == 0 && alarm_active) {
-            pins.digitalWritePin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digitalWritePin(DigitalPin.P0, 0)
-            basic.pause(300)
-        } else if (time_left == Math.idiv(current_timer, 2) || time_left == Math.idiv(current_timer, 5)) {
-            //  Beep at 1/2 and 1/5 time time_left
-            pins.digitalWritePin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digitalWritePin(DigitalPin.P0, 0)
-            basic.pause(200)
-            pins.digitalWritePin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digitalWritePin(DigitalPin.P0, 0)
-            basic.pause(200)
-            pins.digitalWritePin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digitalWritePin(DigitalPin.P0, 0)
-            basic.pause(200)
-        } else {
-            basic.pause(100)
-        }
-        
-    }
-})
 basic.forever(function main_loop() {
     let current_timer_length: number;
+    
     
     if (is_work_timer) {
         current_timer_length = WORK_TIMER_LENGTH
@@ -116,9 +93,23 @@ basic.forever(function main_loop() {
         //  Do a time step
         basic.pause(TIME_STEP)
         time_left -= 1
+        if (time_left == Math.idiv(current_timer_length, 2)) {
+            music.startMelody(half_alert, MelodyOptions.Once)
+        }
+        
+        if (time_left == Math.idiv(current_timer_length, 5)) {
+            music.startMelody(one_fifth_alert, MelodyOptions.Once)
+        }
+        
     }
+    if (time_left == 0 && !alarm_melody_started) {
+        music.startMelody(alarm_melody, MelodyOptions.Forever)
+        alarm_melody_started = true
+    }
+    
 })
 input.onButtonPressed(Button.A, function on_button_pressed_a() {
+    
     
     
     
@@ -126,16 +117,20 @@ input.onButtonPressed(Button.A, function on_button_pressed_a() {
         return
     }
     
+    //  Below this point timer has finished, in either alarm or setting mode
     if (alarm_active) {
+        //  Alarm mode > settings mode
         alarm_active = false
         is_work_timer = !is_work_timer
         //  Switch timer
-        return
+        music.stopMelody(MelodyStopOptions.All)
+    } else {
+        //  Settings mode > start timer
+        time_left = is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH
+        alarm_active = true
+        alarm_melody_started = false
     }
     
-    //  Triggers when countdown finishes
-    time_left = is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH
-    alarm_active = true
 })
 input.onButtonPressed(Button.B, function on_button_pressed_b() {
     /** Change timer length */

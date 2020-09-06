@@ -20,6 +20,23 @@ BREAK_TIMER_LENGTH = 5
 time_left = 0
 is_work_timer = False  # Will switch to start with work timer after pressing A
 alarm_active = True
+alarm_melody_started = False
+
+music.set_tempo(108)
+
+alarm_melody = [
+    "G4:2", "D#4:2", "A#3:1", "A#3:1",
+    "A#3:2", "F4:2", "D#4:3", "R:1",
+    "R:2", "G4:1", "G4:1", "G4:1", "G4:1", "G4:1", "G#4:1",
+    "G4:1", "R:1", "G4:1", "G4:1", "G4:1", "G4:1", "G4:1", "G#4:1",
+    "G4:1", "R:1", 
+]
+half_alert = [
+    'D#5:2', "R:4", "A#4:2", "R:8",
+    ]
+one_fifth_alert = [
+    'G4:2', "R:4", "G#4:2", "R:8",
+]
 
 def plot_on_column(number, column_index):
     if number <= 0 or number >= 6:
@@ -60,37 +77,11 @@ def display():
                 previous_time_left = time_left
             basic.pause(50)
 
-def buzz():
-    while True:
-        current_timer = WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH
-        if time_left == 0 and alarm_active:
-            pins.digital_write_pin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digital_write_pin(DigitalPin.P0, 0)
-            basic.pause(300)
-        elif time_left == current_timer // 2 or time_left == current_timer // 5:
-            # Beep at 1/2 and 1/5 time time_left
-            pins.digital_write_pin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digital_write_pin(DigitalPin.P0, 0)
-            basic.pause(200)
-            pins.digital_write_pin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digital_write_pin(DigitalPin.P0, 0)
-            basic.pause(200)
-            pins.digital_write_pin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digital_write_pin(DigitalPin.P0, 0)
-            basic.pause(200)
-        else:
-            basic.pause(100)
-
-
 control.in_background(display)
-control.in_background(buzz)
 
 def main_loop():
     global time_left
+    global alarm_melody_started
     if is_work_timer:
         current_timer_length = WORK_TIMER_LENGTH
     else:
@@ -100,6 +91,14 @@ def main_loop():
         # Do a time step
         basic.pause(TIME_STEP)
         time_left -= 1
+        if time_left == current_timer_length // 2:
+            music.start_melody(half_alert, MelodyOptions.ONCE)
+        if time_left == current_timer_length // 5:
+            music.start_melody(one_fifth_alert, MelodyOptions.ONCE)
+    
+    if time_left == 0 and not alarm_melody_started:
+        music.start_melody(alarm_melody, MelodyOptions.FOREVER)
+        alarm_melody_started = True
         
 basic.forever(main_loop)
 
@@ -107,17 +106,21 @@ def on_button_pressed_a():
     global time_left
     global is_work_timer
     global alarm_active
+    global alarm_melody_started
 
     if time_left > 0:
         return
+    # Below this point timer has finished, in either alarm or setting mode
     if alarm_active:
+        # Alarm mode > settings mode
         alarm_active = False
         is_work_timer = not is_work_timer  # Switch timer
-        return
-
-    # Triggers when countdown finishes
-    time_left = WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH
-    alarm_active = True
+        music.stop_melody(MelodyStopOptions.ALL)
+    else:
+        # Settings mode > start timer
+        time_left = WORK_TIMER_LENGTH if is_work_timer else BREAK_TIMER_LENGTH
+        alarm_active = True
+        alarm_melody_started = False
 
 input.on_button_pressed(Button.A, on_button_pressed_a)
 
