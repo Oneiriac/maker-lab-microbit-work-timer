@@ -8,46 +8,75 @@
 //  Press button A to silence the buzzer 
 //  Press A again to start another work timer
 //  Define constants
-let WORK_TIMER_LENGTH = 25
-let WORK_TIMER_SERVO_MODULO = 2
-let BREAK_TIMER_LENGTH = 5
-let BREAK_TIMER_SERVO_MODULO = 1
-let MAX_SERVO_ANGLE = 180
+let MIN_WORK_TIMER_LENGTH = 25
+let MAX_WORK_TIMER_LENGTH = 60
+let MIN_BREAK_TIMER_LENGTH = 5
+let MAX_BREAK_TIMER_LENGTH = 30
 let TIME_STEP = 1000
-//  increment that the timer uses
+//  increment that the timer uses, in ms
 //  Initialise variables
+let WORK_TIMER_LENGTH = 25
+let BREAK_TIMER_LENGTH = 5
 let time_left = 0
 let is_work_timer = false
 //  Will switch to start with work timer after pressing A
 let alarm_active = true
-let servo_angle = 180
-//  0 <= servo_angle <= 180
+let alarm_melody_started = false
+music.setTempo(108)
+let alarm_melody = ["G4:2", "D#4:2", "A#3:1", "A#3:1", "A#3:2", "F4:2", "D#4:3", "R:1", "R:2", "G4:1", "G4:1", "G4:1", "G4:1", "G4:1", "G#4:1", "G4:1", "R:1", "G4:1", "G4:1", "G4:1", "G4:1", "G4:1", "G#4:1", "G4:1", "R:1"]
+let half_alert = ["D#5:2", "R:4", "A#4:2", "R:8"]
+let one_fifth_alert = ["G4:2", "R:4", "G#4:2", "R:8"]
+function plot_on_column(number: number, column_index: number) {
+    if (number <= 0 || number >= 6) {
+        return
+    }
+    
+    for (let y = 0; y < number; y++) {
+        led.plot(column_index, y)
+    }
+}
+
 function plot_number_on_grid(number: number) {
-    let y: number;
+    /** 
+    Use left 2 columns to plot the tens digit
+    Use right 2 columns to plot the ones digit
+    
+ */
     basic.clearScreen()
     if (number == 0) {
         return
     }
     
-    let max_x = Math.idiv(number - 1, 5)
-    let max_y = (number - 1) % 5
-    //  Plot all LEDs with x < max_x
-    for (let x = 0; x < max_x; x++) {
-        for (y = 0; y < 5; y++) {
-            led.plot(x, y)
-        }
-    }
-    //  Plot LEDs with x == max_x and y <= max_y
-    for (y = 0; y < max_y + 1; y++) {
-        led.plot(max_x, y)
-    }
+    let tens_digit = Math.idiv(number, 10)
+    let ones_digit = number % 10
+    plot_on_column(Math.min(tens_digit, 5), 0)
+    plot_on_column(tens_digit - 5, 1)
+    plot_on_column(Math.min(ones_digit, 5), 3)
+    plot_on_column(ones_digit - 5, 4)
 }
 
+control.inBackground(function set_volume() {
+    let analog_read: number;
+    let raw_volume: number;
+    let volume: number;
+    while (true) {
+        analog_read = pins.analogReadPin(AnalogPin.P1)
+        raw_volume = Math.min(Math.idiv(analog_read, 4), 255)
+        volume = raw_volume >= 10 ? raw_volume : 0
+        music.setVolume(volume)
+        basic.pause(30)
+    }
+})
 control.inBackground(function display() {
     let previous_time_left = -1
     while (true) {
         if (time_left == 0) {
-            alarm_active ? basic.showString("!!!", 50) : basic.showIcon(IconNames.Asleep)
+            if (alarm_active) {
+                basic.showString("!!!", 50)
+            } else {
+                plot_number_on_grid(is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH)
+            }
+            
             basic.pause(50)
         } else {
             if (time_left != previous_time_left) {
@@ -62,51 +91,32 @@ control.inBackground(function display() {
         
     }
 })
-control.inBackground(function buzz() {
-    while (true) {
-        if (time_left == 0 && alarm_active) {
-            pins.digitalWritePin(DigitalPin.P0, 1)
-            basic.pause(300)
-            pins.digitalWritePin(DigitalPin.P0, 0)
-            basic.pause(300)
-        } else {
-            basic.pause(100)
-        }
-        
-    }
-})
-control.inBackground(function set_servo() {
-    let servo_modulo = 0
-    while (true) {
-        servo_modulo = is_work_timer ? WORK_TIMER_SERVO_MODULO : BREAK_TIMER_SERVO_MODULO
-        if (time_left % servo_modulo == 0) {
-            pins.servoWritePin(AnalogPin.P11, servo_angle)
-        }
-        
-        basic.pause(100)
-    }
-})
 basic.forever(function main_loop() {
     let current_timer_length: number;
-    let servo_modulo: number;
     
     
     if (is_work_timer) {
         current_timer_length = WORK_TIMER_LENGTH
-        servo_modulo = WORK_TIMER_SERVO_MODULO
     } else {
         current_timer_length = BREAK_TIMER_LENGTH
-        servo_modulo = BREAK_TIMER_SERVO_MODULO
     }
     
     while (time_left > 0) {
         //  Do a time step
         basic.pause(TIME_STEP)
         time_left -= 1
-        servo_angle = (current_timer_length - time_left) / current_timer_length * 180
+        if (time_left == Math.idiv(current_timer_length, 2)) {
+            music.startMelody(half_alert, MelodyOptions.Once)
+        }
+        
+        if (time_left == Math.idiv(current_timer_length, 5)) {
+            music.startMelody(one_fifth_alert, MelodyOptions.Once)
+        }
+        
     }
-    if (time_left == 0 && !alarm_active) {
-        servo_angle = 0
+    if (time_left == 0 && !alarm_melody_started) {
+        music.startMelody(alarm_melody, MelodyOptions.Forever)
+        alarm_melody_started = true
     }
     
 })
@@ -114,25 +124,46 @@ input.onButtonPressed(Button.A, function on_button_pressed_a() {
     
     
     
+    
     if (time_left > 0) {
         return
     }
     
+    //  Below this point timer has finished, in either alarm or setting mode
     if (alarm_active) {
+        //  Alarm mode > settings mode
         alarm_active = false
+        is_work_timer = !is_work_timer
+        //  Switch timer
+        music.stopMelody(MelodyStopOptions.All)
+    } else {
+        //  Settings mode > start timer
+        time_left = is_work_timer ? WORK_TIMER_LENGTH : BREAK_TIMER_LENGTH
+        alarm_active = true
+        alarm_melody_started = false
+    }
+    
+})
+input.onButtonPressed(Button.B, function on_button_pressed_b() {
+    /** Change timer length */
+    
+    
+    if (time_left > 0 || alarm_active) {
         return
     }
     
-    //  Triggers when countdown finishes
     if (is_work_timer) {
-        //  switch to break timer
-        is_work_timer = false
-        time_left = BREAK_TIMER_LENGTH
+        WORK_TIMER_LENGTH += 5
+        if (WORK_TIMER_LENGTH > MAX_WORK_TIMER_LENGTH) {
+            WORK_TIMER_LENGTH = MIN_WORK_TIMER_LENGTH
+        }
+        
     } else {
-        //  switch to work timer
-        is_work_timer = true
-        time_left = WORK_TIMER_LENGTH
+        BREAK_TIMER_LENGTH += 5
+        if (BREAK_TIMER_LENGTH > MAX_BREAK_TIMER_LENGTH) {
+            BREAK_TIMER_LENGTH = MIN_BREAK_TIMER_LENGTH
+        }
+        
     }
     
-    alarm_active = true
 })
